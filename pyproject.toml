@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "humanizer-bench"
+version = "0.0.1"
+description = "A benchmark for the robustness of AI-text detectors against humanizer attacks."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    # The student will be added here as the first author when they join
+    # (see CONTRIBUTING.md). Listed for now: the current sole contributor.
+    { name = "zienzhu", email = "zhuzien666@gmail.com" },
+]
+keywords = ["nlp", "ai-detection", "benchmark", "robustness", "llm", "evaluation"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# The core package runs on the standard library alone -- no runtime deps.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-cov"]
+# Phase 2: real detectors, attacks, and dataset loaders.
+models = ["torch", "transformers", "datasets", "sacremoses"]
+
+[project.scripts]
+humanizer-bench = "humanizer_bench.runner:main"
+
+[project.urls]
+Homepage = "https://github.com/zhuzien666/humanizer-bench"
+Repository = "https://github.com/zhuzien666/humanizer-bench"
+Issues = "https://github.com/zhuzien666/humanizer-bench/issues"
+
+[tool.setuptools.packages.find]
+include = ["humanizer_bench*"]
+
+[tool.setuptools.package-data]
+humanizer_bench = ["data/*.jsonl"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
