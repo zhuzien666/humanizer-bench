@@ -58,13 +58,28 @@ python run.py
 You'll get a before/after table like:
 
 ```
-detector=heuristic   attack=noise   n=18
+detector=heuristic   attack=sentence_merge   n=18
 --------------------------------------------
 metric                         value
-accuracy (clean)               0.xxx
-accuracy (attacked)            0.xxx
-accuracy drop                  0.xxx
-FPR on human (clean)           0.xxx
+accuracy (clean)               0.833
+accuracy (attacked)            0.500
+accuracy drop                  0.333
+FPR on human (clean)           0.333
+```
+
+Once installed (`pip install -e .`), the same loop is available as the
+`humanizer-bench` command. Repeat `--detector`/`--attack` to get a full
+detector × attack grid:
+
+```bash
+humanizer-bench --list                        # registered components
+humanizer-bench -a sentence_merge -a noise    # matrix: one column per attack
+```
+
+```
+n=18   cells: accuracy drop after attack (higher = more vulnerable)
+detector     clean    FPR    sentence_merge   noise
+heuristic    0.833  0.333             0.333   0.000
 ```
 
 Or from Python:
@@ -119,7 +134,9 @@ pattern. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 - [ ] Back-translation and synonym-substitution attacks
 - [ ] Real dataset loaders (RAID + non-native-English corpus)
 - [ ] ROC-AUC, P/R/F1, bootstrap confidence intervals
-- [ ] CLI, docs site, and CI
+- [x] CLI with detector × attack matrix evaluation
+- [x] GitHub Actions CI
+- [ ] Docs site
 
 ## License
 

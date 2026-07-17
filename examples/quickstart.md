@@ -9,6 +9,13 @@ the toy pipeline uses only the Python standard library.
 python run.py
 ```
 
+After `pip install -e ".[dev]"` you also get the `humanizer-bench` command:
+
+```bash
+humanizer-bench --list                        # see registered components
+humanizer-bench -a sentence_merge -a noise    # detector × attack matrix
+```
+
 ## Compose your own run
 
 ```python
