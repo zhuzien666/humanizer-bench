@@ -37,6 +37,8 @@ Each of the four parts has a base class with a single required method:
 Please:
 
 - Add a docstring to every public class and function.
+- Export the component from its package `__init__.py` **and** register it in
+  `humanizer_bench/registry.py` so the CLI and `humanizer-bench --list` can find it.
 - Add at least one test per new component.
 - Keep `pytest` green (`pytest` from the repo root).
 
