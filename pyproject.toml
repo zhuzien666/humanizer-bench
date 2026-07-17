@@ -33,7 +33,7 @@ dev = ["pytest>=7", "pytest-cov"]
 models = ["torch", "transformers", "datasets", "sacremoses"]
 
 [project.scripts]
-humanizer-bench = "humanizer_bench.runner:main"
+humanizer-bench = "humanizer_bench.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/zhuzien666/humanizer-bench"
