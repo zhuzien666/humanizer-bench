@@ -16,7 +16,7 @@ writers*, including non-native English speakers.
 
 ## The idea: four pluggable parts
 
-Everything is built around four interfaces, so adding a new detector (or attack, or
+Hi! Everything is built around four interfaces, so adding a new detector (or attack, or
 dataset) is just writing one small subclass:
 
 ```
