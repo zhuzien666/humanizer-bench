@@ -12,6 +12,7 @@ license = { text = "MIT" }
 authors = [
     # The student will be added here as the first author when they join
     # (see CONTRIBUTING.md). Listed for now: the current sole contributor.
+    { name = "YifanChen", email = "Ivanchen9876@gmail.com" },
     { name = "zienzhu", email = "zhuzien666@gmail.com" },
 ]
 keywords = ["nlp", "ai-detection", "benchmark", "robustness", "llm", "evaluation"]
