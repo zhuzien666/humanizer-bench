@@ -42,6 +42,47 @@ Please:
 - Add at least one test per new component.
 - Keep `pytest` green (`pytest` from the repo root).
 
+## Model-backed components
+
+Detectors that load a language model (and attacks that translate text) need `torch` and
+`transformers`. Those live behind the `models` extra so the core install stays light:
+
+```bash
+pip install -e ".[models]"
+```
+
+Two conventions keep such components friendly to users who have *not* installed the extra:
+
+**1. Import through `require`, inside the method that needs it.** Lazy-importing keeps
+construction cheap and turns a missing install into one actionable message:
+
+```python
+from .._deps import require
+
+
+class MyModelDetector(BaseDetector):
+    name = "my-model"
+
+    def score(self, text: str) -> float:
+        transformers = require("transformers")   # ImportError names the install command
+        ...
+```
+
+Cache anything expensive (a loaded model or tokenizer) on the instance so it is built
+once, not once per call.
+
+**2. Let the tests skip when the extra is absent.** CI installs only `[dev]`, so a test
+that needs a real model must opt out cleanly rather than fail:
+
+```python
+import pytest
+
+transformers = pytest.importorskip("transformers")   # skips if not installed
+```
+
+Keep at least one test that runs *without* the extra — for example, asserting that the
+component is registered, or that its score stays within `[0, 1]` on a stubbed model.
+
 ## Style
 
 - Follow PEP 8; keep functions small and documented.
