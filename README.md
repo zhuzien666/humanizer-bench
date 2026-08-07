@@ -123,7 +123,9 @@ class MyDetector(BaseDetector):
 ```
 
 Attacks (`BaseAttack.transform`) and datasets (`BaseDataset.__iter__`) follow the same
-pattern. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+pattern. See [`docs/architecture.md`](docs/architecture.md) for the full interface
+contracts and how the evaluation loop uses them, and [`CONTRIBUTING.md`](CONTRIBUTING.md)
+for the workflow.
 
 ## Roadmap
 
