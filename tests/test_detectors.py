@@ -27,9 +27,23 @@ def test_score_batch_matches_score():
     assert detector.score_batch(texts) == [detector.score(t) for t in texts]
 
 
-def test_perplexity_stub_raises():
-    with pytest.raises(NotImplementedError):
-        PerplexityDetector().score("anything")
+@pytest.mark.models
+def test_perplexity_score_in_range():
+    detector = PerplexityDetector()
+    score = detector.score("The quick brown fox jumps over the lazy dog near the river.")
+    assert 0.0 <= score <= 1.0
+
+
+@pytest.mark.models
+def test_perplexity_deterministic():
+    detector = PerplexityDetector()
+    text = "This is a fixed test string used to check determinism."
+    assert detector.score(text) == detector.score(text)
+
+
+@pytest.mark.models
+def test_perplexity_short_text_is_neutral():
+    assert PerplexityDetector().score("hi there") == 0.5
 
 
 def test_base_detector_is_abstract():

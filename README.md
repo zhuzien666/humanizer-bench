@@ -34,7 +34,7 @@ dataset) is just writing one small subclass:
 
 | Part | Base class | Ships now | Coming (Phase 2) |
 |------|-----------|-----------|------------------|
-| Detector | `BaseDetector` | `HeuristicDetector` (burstiness baseline) | GPT-2 perplexity, Binoculars, Fast-DetectGPT |
+| Detector | `BaseDetector` | `HeuristicDetector` (burstiness baseline), `PerplexityDetector` (GPT-2 perplexity) | Binoculars, Fast-DetectGPT |
 | Attack   | `BaseAttack`   | `SentenceMergeAttack`, `NoiseAttack`   | back-translation, synonym substitution |
 | Dataset  | `BaseDataset`  | `ToyDataset` (bundled, offline)        | RAID, human control, non-native English |
 | Metrics  | —              | accuracy, false-positive rate          | ROC-AUC, P/R/F1, bootstrap CIs |
@@ -132,7 +132,8 @@ for the workflow.
 - [x] Four-part architecture + base classes
 - [x] Offline minimal closed loop (`python run.py`)
 - [x] Initial test suite
-- [ ] GPT-2 perplexity detector; Binoculars / Fast-DetectGPT wrappers
+- [x] GPT-2 perplexity detector
+- [ ] Binoculars / Fast-DetectGPT wrappers
 - [ ] Back-translation and synonym-substitution attacks
 - [ ] Real dataset loaders (RAID + non-native-English corpus)
 - [ ] ROC-AUC, P/R/F1, bootstrap confidence intervals
