@@ -29,7 +29,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=7", "pytest-cov"]
 # Phase 2: real detectors, attacks, and dataset loaders.
-models = ["torch", "transformers", "datasets", "sacremoses"]
+models = ["torch", "transformers", "datasets", "sacremoses", "sentencepiece"]
 
 [project.scripts]
 humanizer-bench = "humanizer_bench.cli:main"
