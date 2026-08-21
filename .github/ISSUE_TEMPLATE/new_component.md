@@ -23,6 +23,7 @@ labels: enhancement
 
 - [ ] Subclasses the relevant base class and implements its one required method
 - [ ] Exported from the package `__init__.py` and registered in `humanizer_bench/registry.py`
-- [ ] Tests added; model-backed tests use `pytest.importorskip` so CI skips cleanly
+- [ ] Tests added; model-backed tests are marked `@pytest.mark.models` (tests/conftest.py skips them when the extra is absent)
+- [ ] Any new heavy dependency added to the `models` extra in pyproject.toml
 - [ ] Heavy dependencies imported lazily via `_deps.require()`
 - [ ] README component table updated

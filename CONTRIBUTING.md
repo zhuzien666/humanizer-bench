@@ -71,17 +71,29 @@ class MyModelDetector(BaseDetector):
 Cache anything expensive (a loaded model or tokenizer) on the instance so it is built
 once, not once per call.
 
-**2. Let the tests skip when the extra is absent.** CI installs only `[dev]`, so a test
-that needs a real model must opt out cleanly rather than fail:
+**2. Mark tests that need a real model.** CI installs only `[dev]`, so a test that loads a
+model must opt out cleanly rather than fail. Mark it, and `tests/conftest.py` skips it
+whenever the extra is absent:
 
 ```python
 import pytest
 
-transformers = pytest.importorskip("transformers")   # skips if not installed
+
+@pytest.mark.models
+def test_scores_ai_text_above_human_text():
+    ...
 ```
 
+The marker also lets you split the suite while developing — `pytest -m "not models"` runs
+the fast tests without loading anything, `pytest -m models` runs only the slow ones.
+
 Keep at least one test that runs *without* the extra — for example, asserting that the
-component is registered, or that its score stays within `[0, 1]` on a stubbed model.
+component is registered, or that constructing it does not import the heavy dependency.
+
+**3. Declare new heavy dependencies.** If your component needs a library that the `models`
+extra does not already list, add it there. A missing transitive dependency (a tokenizer
+backend, say) surfaces as a confusing failure deep inside `transformers`, not as a clear
+"please install X".
 
 ## Style
 
