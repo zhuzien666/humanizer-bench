@@ -84,7 +84,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     except ValueError as err:  # unknown component name
         print(f"error: {err}", file=sys.stderr)
         return 2
-    except NotImplementedError as err:  # a Phase 2 stub was selected
+    except NotImplementedError as err:  # a not-yet-implemented component
+        print(f"error: {err}", file=sys.stderr)
+        return 2
+    except ImportError as err:  # a model-backed component without the extra
         print(f"error: {err}", file=sys.stderr)
         return 2
 

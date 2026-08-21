@@ -47,3 +47,4 @@ humanizer_bench = ["data/*.jsonl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["models: requires the optional 'models' extra (torch/transformers)"]

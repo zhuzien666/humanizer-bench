@@ -27,9 +27,41 @@ def test_score_batch_matches_score():
     assert detector.score_batch(texts) == [detector.score(t) for t in texts]
 
 
-def test_perplexity_stub_raises():
-    with pytest.raises(NotImplementedError):
-        PerplexityDetector().score("anything")
+@pytest.mark.models
+def test_perplexity_score_in_range():
+    detector = PerplexityDetector()
+    score = detector.score("The quick brown fox jumps over the lazy dog near the river.")
+    assert 0.0 <= score <= 1.0
+
+
+@pytest.mark.models
+def test_perplexity_deterministic():
+    detector = PerplexityDetector()
+    text = "This is a fixed test string used to check determinism."
+    assert detector.score(text) == detector.score(text)
+
+
+@pytest.mark.models
+def test_perplexity_short_text_is_neutral():
+    assert PerplexityDetector().score("hi there") == 0.5
+
+
+@pytest.mark.models
+def test_perplexity_ranks_ai_above_human():
+    # The range/determinism/neutral tests above all still pass if the logistic
+    # is inverted (`perplexity - _REF` instead of `_REF - perplexity`), which
+    # silently turns the detector inside out: every human text gets flagged.
+    # Only an ordering assertion catches that, so keep this one.
+    detector = PerplexityDetector()
+    ai_text = (
+        "Artificial intelligence has become an essential part of modern technology. "
+        "It enables machines to perform tasks that normally require human intelligence."
+    )
+    human_text = (
+        "Honestly? I forgot my umbrella again and got completely soaked walking to "
+        "the station. Third time this week."
+    )
+    assert detector.score(ai_text) > detector.score(human_text)
 
 
 def test_base_detector_is_abstract():
