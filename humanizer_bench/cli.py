@@ -8,6 +8,7 @@ the detailed before/after table instead.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from typing import List, Optional
 
@@ -46,6 +47,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.5,
         help="decision threshold on the AI score (default: 0.5)",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="emit results as JSON on stdout instead of a text table",
     )
     parser.add_argument(
         "--list", action="store_true", help="list registered components and exit"
@@ -91,7 +97,18 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"error: {err}", file=sys.stderr)
         return 2
 
-    if len(results) == 1:
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "dataset": args.dataset,
+                    "threshold": args.threshold,
+                    "results": [r.as_dict() for r in results],
+                },
+                indent=2,
+            )
+        )
+    elif len(results) == 1:
         print(format_result(results[0]))
     else:
         print(format_matrix(results))
