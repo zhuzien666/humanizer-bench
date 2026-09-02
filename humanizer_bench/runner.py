@@ -9,7 +9,7 @@ the loops stay the same.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 from .attacks.base import BaseAttack
 from .attacks.sentence_merge import SentenceMergeAttack
@@ -33,8 +33,27 @@ class RunResult:
 
     @property
     def drop(self) -> float:
-        """Accuracy lost because of the attack (higher = more vulnerable)."""
+        """Accuracy lost because of the attack (higher = more vulnerable).
+
+        Negative when the attack made the detector *more* accurate.
+        """
         return self.acc_clean - self.acc_attacked
+
+    def as_dict(self) -> Dict[str, Any]:
+        """Return a JSON-serializable view, including the derived ``drop``.
+
+        ``dataclasses.asdict`` would omit ``drop`` because it is a property,
+        and ``drop`` is the headline number — so build the mapping explicitly.
+        """
+        return {
+            "detector": self.detector,
+            "attack": self.attack,
+            "n": self.n,
+            "acc_clean": self.acc_clean,
+            "acc_attacked": self.acc_attacked,
+            "drop": self.drop,
+            "fpr_clean": self.fpr_clean,
+        }
 
 
 def run_matrix(
