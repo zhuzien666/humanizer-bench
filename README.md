@@ -74,6 +74,7 @@ detector × attack grid:
 ```bash
 humanizer-bench --list                        # registered components
 humanizer-bench -a sentence_merge -a noise    # matrix: one column per attack
+humanizer-bench -a sentence_merge --json      # machine-readable results
 ```
 
 ```

@@ -60,6 +60,11 @@ is immediately available from the command line and in `humanizer-bench --list`. 
 component is not "done" until it is both exported from its package `__init__.py` and
 listed in the registry.
 
+`--json` emits the same results as a machine-readable object instead of a text table, so
+downstream analysis (the eventual heatmap figure) does not have to parse the aligned
+columns. Each entry carries `drop` explicitly rather than leaving it to be recomputed —
+`dataclasses.asdict` would omit it, since it is a property on `RunResult`.
+
 ## Optional dependencies
 
 The core package imports nothing outside the standard library, so `pip install
