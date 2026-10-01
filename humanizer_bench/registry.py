@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Dict, Type
 
 from .attacks import BackTranslationAttack, BaseAttack, NoiseAttack, SentenceMergeAttack
-from .datasets import BaseDataset, ToyDataset
+from .datasets import BaseDataset, NonNativeDataset, ToyDataset
 from .detectors import BaseDetector, HeuristicDetector, PerplexityDetector
 
 DETECTORS: Dict[str, Type[BaseDetector]] = {
@@ -28,6 +28,7 @@ ATTACKS: Dict[str, Type[BaseAttack]] = {
 
 DATASETS: Dict[str, Type[BaseDataset]] = {
     ToyDataset.name: ToyDataset,
+    NonNativeDataset.name: NonNativeDataset,
 }
 
 

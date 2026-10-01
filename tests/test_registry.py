@@ -3,6 +3,7 @@
 import pytest
 
 from humanizer_bench.attacks import SentenceMergeAttack
+from humanizer_bench.datasets import NonNativeDataset
 from humanizer_bench.detectors import HeuristicDetector
 from humanizer_bench.registry import (
     ATTACKS,
@@ -18,6 +19,12 @@ def test_get_known_components():
     assert isinstance(get_detector("heuristic"), HeuristicDetector)
     assert isinstance(get_attack("sentence_merge"), SentenceMergeAttack)
     assert get_dataset("toy").name == "toy"
+
+
+def test_get_nonnative_dataset():
+    dataset = get_dataset("nonnative")
+    assert isinstance(dataset, NonNativeDataset)
+    assert dataset.name == "nonnative"
 
 
 def test_unknown_name_lists_available():

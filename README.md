@@ -36,7 +36,7 @@ dataset) is just writing one small subclass:
 |------|-----------|-----------|------------------|
 | Detector | `BaseDetector` | `HeuristicDetector` (burstiness baseline), `PerplexityDetector` (GPT-2 perplexity) | Binoculars, Fast-DetectGPT |
 | Attack   | `BaseAttack`   | `SentenceMergeAttack`, `NoiseAttack`   | back-translation, synonym substitution |
-| Dataset  | `BaseDataset`  | `ToyDataset` (bundled, offline)        | RAID, human control, non-native English |
+| Dataset  | `BaseDataset`  | `ToyDataset` (bundled, offline), `NonNativeDataset` (JFLEG, needs `models` extra) | RAID, human control |
 | Metrics  | —              | accuracy, false-positive rate          | ROC-AUC, P/R/F1, bootstrap CIs |
 
 > The default pairing (`HeuristicDetector` × `SentenceMergeAttack`) is chosen so the
@@ -136,7 +136,8 @@ for the workflow.
 - [x] GPT-2 perplexity detector
 - [ ] Binoculars / Fast-DetectGPT wrappers
 - [ ] Back-translation and synonym-substitution attacks
-- [ ] Real dataset loaders (RAID + non-native-English corpus)
+- [x] Non-native-English corpus loader (JFLEG, `nonnative`) + FPR experiment
+- [ ] RAID dataset loader
 - [ ] ROC-AUC, P/R/F1, bootstrap confidence intervals
 - [x] CLI with detector × attack matrix evaluation
 - [x] GitHub Actions CI
