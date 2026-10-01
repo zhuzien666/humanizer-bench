@@ -3,7 +3,7 @@
 Adapts real corpora from the HuggingFace Hub to the :class:`BaseDataset`
 interface: one AI-generated corpus plus one human control corpus, so metrics
 stop being toy-only. (The non-native-English corpus for false-positive-bias
-measurement is a separate Phase-2 issue.)
+measurement is a separate Phase-2 issue -- :class:`NonNativeDataset` below.)
 
 Requires the ``models`` extra (``pip install -e '.[models]'``) for the
 ``datasets`` library. The Hub import is deferred to first iteration and the
@@ -13,10 +13,11 @@ repeatable and never re-downloads.
 
 from __future__ import annotations
 
-from typing import Iterator, Sequence
+from typing import Iterator, List, Sequence
 
 from .._deps import require
 from .base import BaseDataset, Example
+from typing import Iterator, List
 
 
 class HFDataset(BaseDataset):
@@ -179,3 +180,111 @@ class HFMixedDataset(BaseDataset):
 
     def __iter__(self) -> Iterator[Example]:
         return iter(self._inner)
+
+
+class NonNativeDataset(BaseDataset):
+    """Non-native English writing from the JFLEG corpus, all human-labeled.
+
+    Every example comes from the ``sentence`` field of ``jhu-clsp/jfleg`` --
+    sentences written by English-language learners with different first
+    languages (Napoles et al., 2017). All rows are human writing, so every
+    example gets ``label=0``. Built for the false-positive experiment: run
+    detectors over it and compute ``false_positive_rate`` to see how often
+    real human writers get flagged as AI.
+
+    The Hub import is deferred to first iteration and the materialized
+    examples are cached on the instance, so constructing the dataset is cheap
+    (no download) and iterating stays repeatable without re-downloading.
+
+    Set ``with_control=True`` to pair every learner sentence with the first
+    of JFLEG's four human corrections of that same sentence. Both sides are
+    human writing (``label=0``) with the same content and the same median
+    length, so a gap between them isolates fluency -- which comparing JFLEG
+    against a different corpus cannot do, because topic, genre and length all
+    move at once.
+
+    Args:
+        split: Hub split to load (``"test"`` or ``"validation"``).
+        limit: Maximum examples to keep (first rows); ``None`` keeps all.
+            Counts the control rewrites too when ``with_control`` is set.
+        with_control: Also emit the matched native rewrite of each sentence.
+    """
+
+    name = "nonnative"
+
+    #: Hub repo holding the corpus.
+    hf_name = "jhu-clsp/jfleg"
+
+    #: Splits the JFLEG repo actually publishes (there is no "train").
+    valid_splits = frozenset({"test", "validation"})
+
+    def __init__(
+        self,
+        split: str = "test",
+        limit: int | None = None,
+        with_control: bool = False,
+    ) -> None:
+        if split not in self.valid_splits:
+            raise ValueError(
+                f"split must be one of {sorted(self.valid_splits)}, got {split!r}"
+            )
+        if limit is not None and limit < 0:
+            raise ValueError(f"limit must be non-negative, got {limit!r}")
+        self.split = split
+        self.limit = limit
+        self.with_control = with_control
+        self._examples: List[Example] | None = None
+
+    def __iter__(self) -> Iterator[Example]:
+        if self._examples is None:
+            self._examples = self._load()
+        return iter(self._examples)
+
+    def _load(self) -> List[Example]:
+        datasets = require("datasets")
+        hf = datasets.load_dataset(self.hf_name, split=self.split)
+        examples: List[Example] = []
+        for row in hf:
+            text = (row.get("sentence") or "").strip()
+            if not text:
+                continue
+            examples.append(Example(text=text, label=0, source=self.hf_name))
+            # Emit the matched native rewrite right after each learner
+            # sentence. Both are human (label 0); they differ only in
+            # fluency, the one variable the experiment is about.
+            if self.with_control:
+                control = self._first_correction(row, text)
+                if control is not None:
+                    examples.append(
+                        Example(
+                            text=control,
+                            label=0,
+                            source=f"{self.hf_name}:corrections",
+                        )
+                    )
+            if self.limit is not None and len(examples) >= self.limit:
+                break
+        return examples
+
+    @staticmethod
+    def _first_correction(row: dict, sentence: str) -> str | None:
+        """First fluent rewrite of `sentence` that actually differs from it.
+
+        JFLEG ships four human corrections per row. Rewrites identical to the
+        original carry no contrast, so they are skipped.
+        """
+        for candidate in row.get("corrections") or []:
+            cleaned = (candidate or "").strip()
+            if cleaned and cleaned != sentence:
+                return cleaned
+        return None
+
+
+def load_nonnative_dataset(
+    split: str = "test", limit: int | None = None, with_control: bool = False
+) -> BaseDataset:
+    """Load the JFLEG non-native-English corpus as a :class:`BaseDataset`.
+
+    Convenience wrapper around :class:`NonNativeDataset`.
+    """
+    return NonNativeDataset(split=split, limit=limit, with_control=with_control)
