@@ -27,5 +27,11 @@ class BaseDetector(ABC):
         return [self.score(t) for t in texts]
 
     def predict(self, text: str, threshold: float = 0.5) -> int:
-        """Return ``1`` if ``score(text) >= threshold`` else ``0``."""
-        return int(self.score(text) >= threshold)
+        """Return ``1`` if ``score(text) > threshold`` else ``0``.
+
+        The comparison is deliberately strict: detectors return ``0.5`` to mean
+        "I don't know" (see ``docs/architecture.md``), and a score exactly at
+        the threshold must not count as AI. For a tool measured on its
+        false-positive rate, the safe default is to not accuse on no evidence.
+        """
+        return int(self.score(text) > threshold)

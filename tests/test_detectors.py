@@ -21,6 +21,29 @@ def test_heuristic_short_text_is_neutral():
     assert detector.score("hi there") == 0.5
 
 
+def test_predict_treats_no_evidence_as_not_ai():
+    # A 0.5 score means "I don't know" (see docs/architecture.md); it must not
+    # count as AI. Regression test for issue #16.
+    detector = HeuristicDetector()
+    assert detector.score("hi there") == 0.5
+    assert detector.predict("hi there") == 0
+
+
+def test_predict_threshold_boundary_is_exclusive():
+    class FixedDetector(BaseDetector):
+        name = "fixed"
+
+        def __init__(self, s: float):
+            self._s = s
+
+        def score(self, text: str) -> float:
+            return self._s
+
+    assert FixedDetector(0.5).predict("x") == 0
+    assert FixedDetector(0.4999).predict("x") == 0
+    assert FixedDetector(0.5001).predict("x") == 1
+
+
 def test_score_batch_matches_score():
     detector = HeuristicDetector()
     texts = ["the first example sentence here", "another distinct example sentence"]
