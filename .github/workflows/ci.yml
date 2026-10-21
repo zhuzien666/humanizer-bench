@@ -30,3 +30,20 @@ jobs:
       # regression guard, not a target: raise it only if it stops catching anything.
       - name: Run tests with coverage
         run: pytest -q --cov=humanizer_bench --cov-report=term-missing --cov-fail-under=75
+
+  # Branch protection requires THIS job and nothing else. Matrix jobs are named
+  # "test (<version>)", so every change to the matrix silently renames the
+  # required contexts -- which is how dropping 3.9 left protection waiting on a
+  # check that could never run again. This aggregate has a fixed name, so the
+  # matrix can change freely without touching repository settings.
+  all-tests:
+    name: all tests
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any matrix job did not succeed
+        if: needs.test.result != 'success'
+        run: |
+          echo "matrix result: ${{ needs.test.result }}"
+          exit 1
