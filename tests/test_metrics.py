@@ -22,3 +22,8 @@ def test_false_positive_rate():
 
 def test_false_positive_rate_no_negatives():
     assert false_positive_rate([1, 1], [1, 0]) == 0.0
+
+
+def test_deliberately_failing_sentinel():
+    """TEMPORARY -- proves the required check fails when a matrix job fails."""
+    assert 1 == 2
