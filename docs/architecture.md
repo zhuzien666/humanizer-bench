@@ -34,6 +34,8 @@ Two conventions that are easy to miss:
 - **`0.5` means "I don't know."** Detectors return `0.5` when there is too little signal
   (e.g. a one-token input). Returning `0` or `1` would be claiming certainty from no
   evidence — the wrong failure mode for a tool that can falsely accuse a human writer.
+  Ties go to "not AI": `predict()` uses a strict `>` comparison, so a score exactly at
+  the threshold never counts as AI.
 - **Attacks only touch AI-labeled texts.** This is the realistic threat model: an
   adversary launders machine text. Human texts pass through untouched, which keeps the
   false-positive rate meaningful before and after an attack.
