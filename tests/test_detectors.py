@@ -64,6 +64,19 @@ def test_perplexity_ranks_ai_above_human():
     assert detector.score(ai_text) > detector.score(human_text)
 
 
+@pytest.mark.models
+def test_perplexity_survives_very_high_perplexity():
+    """Garbled text must saturate toward 0.0, not raise OverflowError.
+
+    The single-expression logistic raised once perplexity passed ~8,900
+    (loss > 9.09). Real text reaches that: 2 of the first 250 JFLEG
+    sentences crashed it, this string among them.
+    """
+    score = PerplexityDetector().score("this speace must change gerden .")
+    assert isinstance(score, float)
+    assert 0.0 <= score <= 1.0
+
+
 def test_base_detector_is_abstract():
     with pytest.raises(TypeError):
         BaseDetector()  # cannot instantiate an abstract class

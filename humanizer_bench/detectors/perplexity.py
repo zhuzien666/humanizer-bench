@@ -78,4 +78,16 @@ class PerplexityDetector(BaseDetector):
 
         # Low perplexity -> positive logit -> higher P(AI).
         logit = _SLOPE * (_REF_PERPLEXITY - perplexity)
-        return 1.0 / (1.0 + math.exp(-logit))
+        # math.exp overflows past ~709, so a perplexity above ~8,900
+        # (loss > 9.09) used to raise OverflowError instead of saturating
+        # toward 0.0. Real text reaches that: 2 of the first 250 JFLEG
+        # sentences crash the single-expression form. Both branches below are
+        # the same logistic; the negative one keeps the exponent negative,
+        # where math.exp underflows quietly to 0.0 rather than raising, so no
+        # clamp constant is needed. Wherever the old form did not crash the
+        # two agree to within 2 ULP over 200k random perplexities, and the
+        # classification at threshold 0.5 never differs.
+        if logit >= 0.0:
+            return 1.0 / (1.0 + math.exp(-logit))
+        odds = math.exp(logit)
+        return odds / (1.0 + odds)
