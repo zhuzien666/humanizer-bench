@@ -70,3 +70,24 @@ def test_format_matrix_contains_grid():
 
 def test_format_matrix_empty():
     assert format_matrix([]) == "(no results)"
+
+
+def test_run_matrix_with_ci():
+    results = run_matrix(
+        [HeuristicDetector()], [SentenceMergeAttack(seed=0)],
+        with_ci=True, n_bootstrap=200,
+    )
+    result = results[0]
+    assert result.ci_95 is not None
+    for key in ("acc_clean", "acc_attacked", "fpr_clean"):
+        lo, hi = result.ci_95[key]
+        assert 0.0 <= lo <= hi <= 1.0
+    assert "95% bootstrap CIs" in format_result(result)
+
+
+def test_run_matrix_without_ci_by_default():
+    result = run_matrix(
+        [HeuristicDetector()], [SentenceMergeAttack(seed=0)]
+    )[0]
+    assert result.ci_95 is None
+    assert "95% bootstrap CIs" not in format_result(result)

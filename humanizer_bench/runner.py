@@ -9,7 +9,7 @@ the loops stay the same.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from .attacks.base import BaseAttack
 from .attacks.sentence_merge import SentenceMergeAttack
@@ -17,7 +17,7 @@ from .datasets.base import BaseDataset
 from .datasets.toy import ToyDataset
 from .detectors.base import BaseDetector
 from .detectors.heuristic import HeuristicDetector
-from .metrics.core import accuracy, false_positive_rate
+from .metrics.core import accuracy, bootstrap_ci, false_positive_rate
 
 
 @dataclass
@@ -30,6 +30,8 @@ class RunResult:
     acc_clean: float
     acc_attacked: float
     fpr_clean: float
+    ci_95: Optional[Dict[str, Tuple[float, float]]] = None
+    """Optional 95% bootstrap CIs keyed by metric name (see ``run_matrix``)."""
 
     @property
     def drop(self) -> float:
@@ -53,6 +55,11 @@ class RunResult:
             "acc_attacked": self.acc_attacked,
             "drop": self.drop,
             "fpr_clean": self.fpr_clean,
+            "ci_95": (
+                {k: [lo, hi] for k, (lo, hi) in self.ci_95.items()}
+                if self.ci_95 is not None
+                else None
+            ),
         }
 
 
@@ -61,6 +68,9 @@ def run_matrix(
     attacks: Sequence[BaseAttack],
     dataset: Optional[BaseDataset] = None,
     threshold: float = 0.5,
+    with_ci: bool = False,
+    n_bootstrap: int = 1000,
+    ci_seed: int = 0,
 ) -> List[RunResult]:
     """Evaluate every detector × attack pair on one dataset.
 
@@ -72,6 +82,10 @@ def run_matrix(
     shared across detectors — so every detector is judged on identical inputs,
     and expensive attacks (e.g. back-translation) don't rerun per detector.
     Defaults to the fully offline :class:`ToyDataset`.
+
+    When ``with_ci`` is true, each result also carries 95% bootstrap
+    confidence intervals (``n_bootstrap`` resamples, deterministic ``ci_seed``)
+    for ``acc_clean``, ``acc_attacked`` and ``fpr_clean``.
     """
     dataset = dataset if dataset is not None else ToyDataset()
     examples = list(dataset)
@@ -90,14 +104,32 @@ def run_matrix(
         fpr_clean = false_positive_rate(y_true, clean_pred)
         for attack, texts in zip(attacks, attacked_texts):
             attacked_pred = [detector.predict(text, threshold) for text in texts]
+            acc_attacked = accuracy(y_true, attacked_pred)
+            ci_95 = None
+            if with_ci:
+                ci_95 = {
+                    "acc_clean": bootstrap_ci(
+                        accuracy, y_true, clean_pred,
+                        n_bootstrap=n_bootstrap, seed=ci_seed,
+                    ),
+                    "acc_attacked": bootstrap_ci(
+                        accuracy, y_true, attacked_pred,
+                        n_bootstrap=n_bootstrap, seed=ci_seed,
+                    ),
+                    "fpr_clean": bootstrap_ci(
+                        false_positive_rate, y_true, clean_pred,
+                        n_bootstrap=n_bootstrap, seed=ci_seed,
+                    ),
+                }
             results.append(
                 RunResult(
                     detector=detector.name,
                     attack=attack.name,
                     n=len(examples),
                     acc_clean=acc_clean,
-                    acc_attacked=accuracy(y_true, attacked_pred),
+                    acc_attacked=acc_attacked,
                     fpr_clean=fpr_clean,
+                    ci_95=ci_95,
                 )
             )
     return results
@@ -130,6 +162,12 @@ def format_result(result: RunResult) -> str:
         f"{'accuracy drop':<26}{result.drop:>10.3f}",
         f"{'FPR on human (clean)':<26}{result.fpr_clean:>10.3f}",
     ]
+    if result.ci_95:
+        rows.append("95% bootstrap CIs:")
+        for name in ("acc_clean", "acc_attacked", "fpr_clean"):
+            if name in result.ci_95:
+                lo, hi = result.ci_95[name]
+                rows.append(f"  {name:<24}[{lo:.3f}, {hi:.3f}]")
     return "\n".join(rows)
 
 
