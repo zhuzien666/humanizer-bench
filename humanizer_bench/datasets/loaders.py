@@ -17,7 +17,6 @@ from typing import Iterator, List, Sequence
 
 from .._deps import require
 from .base import BaseDataset, Example
-from typing import Iterator, List
 
 
 class HFDataset(BaseDataset):

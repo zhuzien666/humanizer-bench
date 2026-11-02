@@ -2,14 +2,15 @@
 
 import pytest
 
-from humanizer_bench.datasets import Example, HFDataset, HFMixedDataset, ToyDataset
-from humanizer_bench.datasets.loaders import load_hf_dataset
 from humanizer_bench.datasets import (
     Example,
+    HFDataset,
+    HFMixedDataset,
     NonNativeDataset,
     ToyDataset,
     load_nonnative_dataset,
 )
+from humanizer_bench.datasets.loaders import load_hf_dataset
 from humanizer_bench.detectors import HeuristicDetector
 from humanizer_bench.metrics import abstention_rate, false_positive_rate
 
