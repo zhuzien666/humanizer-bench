@@ -17,7 +17,14 @@ from .datasets.base import BaseDataset
 from .datasets.toy import ToyDataset
 from .detectors.base import BaseDetector
 from .detectors.heuristic import HeuristicDetector
-from .metrics.core import accuracy, bootstrap_ci, false_positive_rate
+from .metrics.core import (
+    abstention_rate,
+    accuracy,
+    bootstrap_ci,
+    bootstrap_ci_diff,
+    false_positive_rate,
+    roc_auc,
+)
 
 
 @dataclass
@@ -30,6 +37,8 @@ class RunResult:
     acc_clean: float
     acc_attacked: float
     fpr_clean: float
+    auc_clean: float = 0.5
+    abstention_clean: float = 0.0
     ci_95: Optional[Dict[str, Tuple[float, float]]] = None
     """Optional 95% bootstrap CIs keyed by metric name (see ``run_matrix``)."""
 
@@ -55,6 +64,8 @@ class RunResult:
             "acc_attacked": self.acc_attacked,
             "drop": self.drop,
             "fpr_clean": self.fpr_clean,
+            "auc_clean": self.auc_clean,
+            "abstention_clean": self.abstention_clean,
             "ci_95": (
                 {k: [lo, hi] for k, (lo, hi) in self.ci_95.items()}
                 if self.ci_95 is not None
@@ -99,11 +110,17 @@ def run_matrix(
 
     results: List[RunResult] = []
     for detector in detectors:
-        clean_pred = [detector.predict(ex.text, threshold) for ex in examples]
+        # score() once per text, then derive predict() from it: run_matrix
+        # used to call predict() only, which returns hard 0/1, leaving
+        # roc_auc unreachable from the pipeline.
+        clean_scores = [detector.score(ex.text) for ex in examples]
+        clean_pred = [int(s > threshold) for s in clean_scores]
         acc_clean = accuracy(y_true, clean_pred)
         fpr_clean = false_positive_rate(y_true, clean_pred)
+        auc_clean = roc_auc(y_true, clean_scores)
+        abstention_clean = abstention_rate(clean_scores)
         for attack, texts in zip(attacks, attacked_texts):
-            attacked_pred = [detector.predict(text, threshold) for text in texts]
+            attacked_pred = [int(detector.score(t) > threshold) for t in texts]
             acc_attacked = accuracy(y_true, attacked_pred)
             ci_95 = None
             if with_ci:
@@ -120,6 +137,12 @@ def run_matrix(
                         false_positive_rate, y_true, clean_pred,
                         n_bootstrap=n_bootstrap, seed=ci_seed,
                     ),
+                    # drop is the headline number, and its interval cannot
+                    # be read off the two marginal ones -- see bootstrap_ci_diff.
+                    "drop": bootstrap_ci_diff(
+                        accuracy, y_true, clean_pred, attacked_pred,
+                        n_bootstrap=n_bootstrap, seed=ci_seed,
+                    ),
                 }
             results.append(
                 RunResult(
@@ -129,6 +152,8 @@ def run_matrix(
                     acc_clean=acc_clean,
                     acc_attacked=acc_attacked,
                     fpr_clean=fpr_clean,
+                    auc_clean=auc_clean,
+                    abstention_clean=abstention_clean,
                     ci_95=ci_95,
                 )
             )
@@ -161,13 +186,15 @@ def format_result(result: RunResult) -> str:
         f"{'accuracy (attacked)':<26}{result.acc_attacked:>10.3f}",
         f"{'accuracy drop':<26}{result.drop:>10.3f}",
         f"{'FPR on human (clean)':<26}{result.fpr_clean:>10.3f}",
+        f"{'ROC-AUC (clean)':<26}{result.auc_clean:>10.3f}",
+        f"{'abstained (no evidence)':<26}{result.abstention_clean:>10.3f}",
     ]
     if result.ci_95:
         rows.append("95% bootstrap CIs:")
-        for name in ("acc_clean", "acc_attacked", "fpr_clean"):
-            if name in result.ci_95:
-                lo, hi = result.ci_95[name]
-                rows.append(f"  {name:<24}[{lo:.3f}, {hi:.3f}]")
+        # Iterate what is actually there: a hardcoded name tuple silently
+        # drops any interval added later.
+        for name, (lo, hi) in result.ci_95.items():
+            rows.append(f"  {name:<24}[{lo:+.3f}, {hi:+.3f}]")
     return "\n".join(rows)
 
 

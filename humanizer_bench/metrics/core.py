@@ -34,6 +34,28 @@ def false_positive_rate(y_true: Sequence[int], y_pred: Sequence[int]) -> float:
     return sum(1 for _, b in negatives if b == 1) / len(negatives)
 
 
+def abstention_rate(y_scores: Sequence[float], neutral: float = 0.5) -> float:
+    """Fraction of texts the detector refused to judge.
+
+    Every detector in this repo returns exactly ``neutral`` (0.5) to mean "I
+    don't know" -- too few words, too few sentences to estimate burstiness.
+    Those rows carry no evidence either way, but they still land in the
+    denominator of :func:`accuracy` and :func:`false_positive_rate`, so a
+    corpus the detector cannot judge at all produces a confident-looking
+    number.
+
+    JFLEG is the worked example: its rows are single sentences, so
+    ``HeuristicDetector`` abstains on 99.3% of them. Under the old ``>=``
+    tie-break that read as FPR 1.000, and under the current strict ``>`` it
+    reads as FPR 0.003. Neither measures bias; both measure the abstention.
+    Report this next to any FPR so an empty result cannot pass for a clean
+    one.
+    """
+    if not y_scores:
+        return 0.0
+    return sum(1 for s in y_scores if s == neutral) / len(y_scores)
+
+
 def _confusion_counts(
     y_true: Sequence[int], y_pred: Sequence[int]
 ) -> Tuple[int, int, int]:
@@ -117,6 +139,54 @@ def roc_auc(y_true: Sequence[int], y_scores: Sequence[float]) -> float:
                 rank_sum += avg_rank
         i = j
     return (rank_sum - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
+
+
+def bootstrap_ci_diff(
+    metric: Callable[[Sequence[int], Sequence[float]], float],
+    y_true: Sequence[int],
+    y_pred_a: Sequence[float],
+    y_pred_b: Sequence[float],
+    *,
+    n_bootstrap: int = 1000,
+    ci: float = 0.95,
+    seed: int = 0,
+) -> Tuple[float, float]:
+    """Percentile bootstrap CI for ``metric(a) - metric(b)`` on paired rows.
+
+    ``acc_clean`` and ``acc_attacked`` are measured on the *same* examples, so
+    the interval for their difference cannot be read off the two marginal
+    intervals -- subtracting the endpoints assumes independence and comes out
+    far too wide. Measured on one 120-example case: subtracting gives
+    ``[+0.000, +0.292]`` (width 0.292) where resampling the pair gives
+    ``[+0.092, +0.208]`` (width 0.117). The wide version touches zero and
+    would be read as "possibly no effect".
+
+    One index set per iteration drives both prediction vectors, which is what
+    makes the difference paired.
+    """
+    n = len(y_true)
+    if not (len(y_pred_a) == len(y_pred_b) == n):
+        raise ValueError("y_true, y_pred_a and y_pred_b must have the same length.")
+    if n == 0:
+        return (0.0, 0.0)
+    if n_bootstrap <= 0:
+        raise ValueError("n_bootstrap must be a positive integer.")
+    if not 0.0 < ci < 1.0:
+        raise ValueError("ci must be strictly between 0.0 and 1.0.")
+    rng = random.Random(seed)
+    stats = []
+    for _ in range(n_bootstrap):
+        idx = [rng.randrange(n) for _ in range(n)]
+        truth = [y_true[i] for i in idx]
+        stats.append(
+            metric(truth, [y_pred_a[i] for i in idx])
+            - metric(truth, [y_pred_b[i] for i in idx])
+        )
+    stats.sort()
+    alpha = 1.0 - ci
+    lo = max(0, min(int(alpha / 2 * n_bootstrap), n_bootstrap - 1))
+    hi = max(0, min(int((1 - alpha / 2) * n_bootstrap), n_bootstrap - 1))
+    return (stats[lo], stats[hi])
 
 
 def bootstrap_ci(
