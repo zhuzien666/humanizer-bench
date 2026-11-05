@@ -49,6 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="decision threshold on the AI score (default: 0.5)",
     )
     parser.add_argument(
+        "--ci",
+        action="store_true",
+        help="also report 95%% bootstrap confidence intervals",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="emit results as JSON on stdout instead of a text table",
@@ -86,7 +91,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         detectors = [get_detector(name) for name in detector_names]
         attacks = [get_attack(name) for name in attack_names]
         dataset = get_dataset(args.dataset)
-        results = run_matrix(detectors, attacks, dataset=dataset, threshold=args.threshold)
+        results = run_matrix(
+            detectors,
+            attacks,
+            dataset=dataset,
+            threshold=args.threshold,
+            with_ci=args.ci,
+        )
     except ValueError as err:  # unknown component name
         print(f"error: {err}", file=sys.stderr)
         return 2
